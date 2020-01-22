@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item android:id="@+id/search" android:title="Search"></item>
+<item android:id="@+id/drawPath" android:title="See User routes" android:checkable="true"></item>
+<item android:id="@+id/nearby" android:title="Find Nearby Places"></item>
+<item android:id="@+id/trackStart" android:title="Tracking" android:checkable="true"/>
+<item android:id="@+id/trackUser" android:title="Track User" android:checkable="true"/>
+<!--<item android:id="@+id/playPath" android:title="Play Path"></item>-->
+</menu>
