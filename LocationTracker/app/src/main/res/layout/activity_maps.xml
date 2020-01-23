@@ -8,56 +8,92 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageButton
-        android:id="@+id/restaurantBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
-        android:padding="10dp"
-        android:background="@drawable/rounded_button"
-        android:src="@drawable/restaurant_btn"
-        map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toTopOf="parent"
-        android:visibility="gone"/>
-
-    <EditText
-        android:id="@+id/searchbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginLeft="24dp"
-        android:ems="15"
-        android:hint="Search"
-        map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toBottomOf="@id/restaurantBtn"
-        android:visibility="gone"/>
-
-    <ImageButton
-        android:id="@+id/searchbtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:padding="10dp"
-        android:src="@drawable/search_icon"
-        map:layout_constraintLeft_toRightOf="@+id/searchbox"
-        map:layout_constraintTop_toBottomOf="@id/restaurantBtn"
-        android:visibility="gone"/>
-
-    <fragment
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+        <androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/drawerLayout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        map:layout_constraintBottom_toBottomOf="parent"
-        map:layout_constraintEnd_toEndOf="parent"
-        map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toBottomOf="@+id/searchbox"
-        tools:context=".MapsActivity" />
+        android:layout_height="match_parent">
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
+
+            <fragment
+                android:id="@+id/map"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                map:layout_constraintBottom_toBottomOf="parent"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toStartOf="parent"
+                map:layout_constraintTop_toTopOf="parent"
+                tools:context=".MapsActivity" />
+
+
+            <com.google.android.material.navigation.NavigationView
+            android:id="@+id/navView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:fitsSystemWindows="true"
+            map:headerLayout="@layout/nav_header"
+            map:menu="@menu/mapmenu"/>
+
+    </androidx.drawerlayout.widget.DrawerLayout>
+
+
+    <ImageButton
+        android:id="@+id/navbtn"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/rounded_navbutton"
+        android:src="@drawable/nav_icon"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/searchLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        map:layout_constraintEnd_toEndOf="@+id/drawerLayout"
+        map:layout_constraintEnd_toStartOf="@+id/drawerLayout"
+        map:layout_constraintStart_toEndOf="@+id/drawerLayout"
+        map:layout_constraintStart_toStartOf="@+id/drawerLayout"
+        map:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/shadow"
+        android:weightSum="1"
+        android:visibility="gone">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="30dp"
+        android:layout_marginTop="20dp"
+        android:hint="Search"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+        android:layout_weight="0.8">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/searchBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+        <ImageButton
+            android:id="@+id/searchbtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="30dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:padding="20dp"
+            android:src="@drawable/search_icon"
+            android:layout_weight="0.2"/>
+    </LinearLayout>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/bottomsheetLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

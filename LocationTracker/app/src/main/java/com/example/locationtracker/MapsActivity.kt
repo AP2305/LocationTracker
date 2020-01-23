@@ -5,7 +5,10 @@ import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.animation.TypeEvaluator
 import android.animation.ValueAnimator
+import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -32,16 +35,17 @@ import android.telecom.Call
 import android.transition.Transition
 import android.transition.TransitionManager
 import android.util.Property
-import android.view.Menu
-import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.View
+import android.view.*
 import android.view.animation.LinearInterpolator
+import android.view.inputmethod.InputMethod
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.core.animation.addListener
 import androidx.core.net.toUri
 import androidx.core.os.postDelayed
 import androidx.core.widget.NestedScrollView
+import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.gms.dynamic.IObjectWrapper
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
@@ -51,13 +55,17 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.navigation.NavigationView
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import kotlinx.android.synthetic.main.activity_maps.*
+import kotlinx.android.synthetic.main.activity_maps.view.*
 import kotlinx.android.synthetic.main.marker_infos.*
 import kotlinx.android.synthetic.main.marker_infos.view.*
 import kotlinx.android.synthetic.main.nearby_markers_list.*
+import kotlinx.android.synthetic.main.select_theme.*
+import kotlinx.android.synthetic.main.select_theme.view.*
 import org.xml.sax.helpers.LocatorImpl
 import retrofit2.Callback
 import retrofit2.Response
@@ -73,7 +81,8 @@ import kotlin.collections.HashMap
 import kotlin.math.ln
 
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
+    NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var mMap: GoogleMap
     private lateinit var locationManager: LocationManager
@@ -83,7 +92,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var bottomListBehaviour:BottomSheetBehavior<NestedScrollView>
     internal lateinit var currentPlace : ResultData
     var mintime: Long = 10
-    private lateinit var menu: Menu
     var prevLocation : Marker?= null
     var trackUserListener : ValueEventListener ?= null
     var userlocation :Marker ?= null
@@ -94,9 +102,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     var nearbyIndexs = ArrayList<LatLng>()
     var locatoinLists = ArrayList<LatLng>()
     var locList = ArrayList<LatLng>()
+    var theme = ArrayList<Int>()
+    var themeIndex = 0
 
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+ /*   override fun onCreateOptionsMenu(menu: Menu?): Boolean {
 
         if (menu != null) {
             this.menu = menu
@@ -180,6 +189,74 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         return super.onOptionsItemSelected(item)
     }
+    */
+
+    override fun onNavigationItemSelected(p0: MenuItem): Boolean {
+
+        var search = navView.menu.findItem(R.id.search)
+        var drawPath = navView.menu.findItem(R.id.drawPath)
+        var removePath = navView.menu.findItem(R.id.removePath)
+        var nearby = navView.menu.findItem(R.id.nearby)
+        var trackStart = navView.menu.findItem(R.id.trackStart)
+        var trackStop = navView.menu.findItem(R.id.trackStop)
+        var trackUser = navView.menu.findItem(R.id.trackUser)
+        var trackUserStop = navView.menu.findItem(R.id.trackUserStop)
+        var theme = navView.menu.findItem(R.id.theme)
+
+        drawerLayout.closeDrawer(Gravity.LEFT)
+
+        when(p0){
+            search->{
+                TransitionManager.beginDelayedTransition(searchLayout)
+                searchBox.setText("")
+                searchLayout.visibility = View.VISIBLE
+            }
+            drawPath->{
+                getLocList(true)
+                drawPath.isVisible = false
+                removePath.isVisible = true
+            }
+            removePath->{
+                getLocList(false)
+                removePath.isVisible = false
+                drawPath.isVisible = true
+            }
+            nearby->{
+                var url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"point_of_interest","",5000)
+                getNearbyPlaces(url)
+            }
+            trackStart->{
+                trackingStart()
+//                trackUserStart(false)
+//                trackUser.isVisible = false
+                trackStart.isVisible = false
+//                trackUserStop.isVisible = false
+                trackStop.isVisible = true
+            }
+            trackStop->{
+                noTracking()
+                trackStart.isVisible = true
+//                trackUser.isVisible = true
+                trackStop.isVisible = false
+            }
+            trackUser->{
+                trackUserStart(true)
+                trackUser.isVisible = false
+                trackUserStop.isVisible = true
+            }
+            trackUserStop->{
+                trackUserStart(false)
+                trackUser.isVisible = true
+                trackUserStop.isVisible = false
+
+            }
+            theme->{
+                chooseTheme()
+            }
+        }
+
+        return true
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -191,6 +268,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         TransitionManager.beginDelayedTransition(bottomsheetLayout)
 
+        theme.clear()
+        theme.add(R.raw.standrad)
+        theme.add(R.raw.dark_style)
+        theme.add(R.raw.silver_style)
+        theme.add(R.raw.night_style)
+        theme.add(R.raw.retromap_style)
+        theme.add(R.raw.aubergine_style)
+
         val intent = intent
         var flag = intent.getBooleanExtra("accuracy", true)
 
@@ -198,56 +283,63 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             mintime = 90000
         }
 
-        TransitionManager.beginDelayedTransition(constraintLayout)
 
-        restaurantBtn.setOnClickListener(View.OnClickListener {
+        var drawerToggle = ActionBarDrawerToggle(this,drawerLayout,R.string.app_name,R.string.app_name)
+        drawerLayout.addDrawerListener(object :DrawerLayout.DrawerListener{
+            override fun onDrawerStateChanged(newState: Int) {
 
-//            var userLocation = userLoc
-            if(userlocation!=null) {
-                var url = getUrl(
-                    userlocation!!.position.latitude,
-                    userlocation!!.position.longitude,
-                    "food",
-                    "restaurant",
-                    2000
-                )
-                getNearbyPlaces(url)
-
-                searchbox.visibility = View.GONE
-                searchbtn.visibility = View.GONE
-                restaurantBtn.visibility = View.GONE
-            }else{
-                Toast.makeText(applicationContext,"Can't find User Location",Toast.LENGTH_SHORT).show()
             }
 
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+                navbtn.visibility = View.VISIBLE
+            }
+            override fun onDrawerOpened(drawerView: View) {
+                navbtn.visibility = View.GONE
+            }
+        })
+
+        navView.setNavigationItemSelectedListener(this)
+
+        drawerLayout.addDrawerListener(drawerToggle)
+
+
+        navbtn.setOnClickListener(object : View.OnClickListener{
+            override fun onClick(v: View?) {
+                if(!drawerLayout.isDrawerOpen(Gravity.LEFT)){
+                    navbtn.visibility = View.GONE
+                    drawerLayout.openDrawer(Gravity.LEFT)
+                }else{
+                    drawerLayout.closeDrawer(Gravity.LEFT)
+                }
+            }
         })
 
         searchbtn.setOnClickListener(View.OnClickListener {
 
-            var userLocation:LatLng = userlocation!!.position
-            if(userLocation==null) {
-                var location = getUserLocation()
+            if (!searchBox.equals("")) {
 
-                if(location!= null) {
-                    userLocation = LatLng(location.latitude,location.longitude)
-                }
-            }else{
-                userLocation = LatLng(23.02,72.57)
-            }
-            if (!searchbox.equals("")) {
-
-                var url = getUrl(userLocation!!.latitude,userLocation!!.longitude,"",searchbox.text.toString(),5000)
+                var url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"",searchBox.text.toString(),5000)
                 getNearbyPlaces(url)
             } else {
-                var url = getUrl(userLocation!!.latitude,userLocation!!.longitude,"","",5000)
+                var url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"","",5000)
                 getNearbyPlaces(url)
             }
-
-            searchbox.visibility = View.GONE
-            searchbtn.visibility = View.GONE
-            restaurantBtn.visibility = View.GONE
+            try {
+                var keyboard = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                keyboard.hideSoftInputFromWindow(currentFocus.windowToken, 0)
+            }catch (e:Exception){
+                e.printStackTrace()
+            }
+            searchLayout.visibility = View.GONE
 
         })
+
+//        drawerToggle.syncState()
+
+        TransitionManager.beginDelayedTransition(constraintLayout)
 
         bottomSheetSetup()
 
@@ -258,6 +350,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         mMap = googleMap
         mService = Common.googleApiService
+
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            var success : Boolean = mMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, theme[themeIndex]))
+
+            if (!success) {
+                Log.e("Map style", "Style parsing failed.");
+            }
+        } catch (e:Exception) {
+            Log.e("Exception in setting style", "Can't find style. Error: ", e);
+        }
+
         userlocation = mMap.addMarker(MarkerOptions().position(LatLng(23.02,72.57)).title("Default"))
 
         mMap.setOnInfoWindowLongClickListener { marker ->
@@ -566,12 +673,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     fun getNearbyPlaces(url:String){
 
-        mMap.clear()
-
         mService.getNearbyPlaces(url)
             .enqueue(object : Callback<ResultData> {
                 override fun onFailure(call: retrofit2.Call<ResultData>, t: Throwable) {
                     Toast.makeText(applicationContext,""+t.message,Toast.LENGTH_LONG).show()
+                    Log.e("Nearby Places Failure",t.message + "\n"+t)
                 }
 
                 override fun onResponse(
@@ -579,6 +685,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     response: Response<ResultData>
                 ) {
                     if (response!!.isSuccessful) {
+                        mMap.clear()
                         var listVieww = ArrayList<String>()
                         nearbyIndexs.clear()
                         nearbyPlaces.clear()
@@ -593,16 +700,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                                     placeName = "Unknown"
 
                                 nearbyPlaces.put(placeName, LatLng(lat!!, lng!!))
-                                var markerr =
-                                    MarkerOptions().position(LatLng(lat!!, lng!!)).title(placeName)
+//                                var markerr = MarkerOptions().position(LatLng(lat!!, lng!!)).title(placeName)
                                 nearbyIndexs.add(LatLng(lat!!, lng!!))
                                 listVieww.add(placeName)
-                                mMap.addMarker(markerr)
-
+                                var marker = mMap.addMarker(MarkerOptions().position(LatLng(lat!!,lng!!)).title(placeName).visible(true))
                             }
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userlocation!!.position,20f))
                             openBottomList(listVieww)
                         }
                         Log.e("nearby Places", "" + nearbyPlaces)
+                    }
+                    else{
+                        Toast.makeText(applicationContext,""+response.body(),Toast.LENGTH_LONG).show()
                     }
                 }
             })
@@ -778,38 +887,113 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
-//    fun animateMarkerArr(locations : ArrayList<LatLng>,count:Int){
-//
-//        var countt = count
-//        println("Startttt")
-//        setPolyLines(locations)
-//
-//        if(locations.size>1&&count<locations.size-1) {
-//            println("animateMarkerArr $count")
-//            var marker = mMap.addMarker(MarkerOptions().position(locations[count]))
-//            var animator = getAnimator(marker,locations[count+1])
-//            animator.addListener(object :Animator.AnimatorListener{
-//                override fun onAnimationRepeat(animation: Animator?) {
-//
-//                }
-//
-//                override fun onAnimationEnd(animation: Animator?) {
-//                    marker.remove()
-//                    countt++
-//                    animateMarkerArr(locations,count)
-//                }
-//
-//                override fun onAnimationCancel(animation: Animator?) {
-//                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-//                }
-//
-//                override fun onAnimationStart(animation: Animator?) {
-//                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-//                }
-//            })
-//            animator.start()
-//        }
-//    }
+    fun chooseTheme(){
+
+        var index = themeIndex
+
+        var themeView = View.inflate(this,R.layout.select_theme,null)
+        themeView.themeBox.check(when(themeIndex){
+            0->R.id.standard
+            1->R.id.dark
+            2->R.id.silver
+            3->R.id.night
+            4->R.id.retro
+            5->R.id.aubergine
+            else -> R.id.standard
+        })
+        themeView.themeBox.setOnCheckedChangeListener(RadioGroup.OnCheckedChangeListener { group, checkedId ->
+
+            when(checkedId){
+                R.id.standard-> index = 0
+                R.id.dark->index = 1
+                R.id.silver->index = 2
+                R.id.night -> index = 3
+                R.id.retro -> index = 4
+                R.id.aubergine-> index = 5
+            }
+
+            try {
+                var success : Boolean = mMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                        this, theme[index]))
+                if (!success) {
+                    Log.e("Map style", "Style parsing failed.");
+                }
+            } catch (e:Exception) {
+                Log.e("Exception in setting style", "Can't find style. Error: ", e);
+            }
+        })
+
+        var alertDialog = AlertDialog.Builder(this)
+        alertDialog.setTitle("Select Theme")
+        alertDialog.setView(themeView)
+        alertDialog.setPositiveButton("APPLY", DialogInterface.OnClickListener { dialog, which ->
+
+            themeIndex = index
+
+            Toast.makeText(applicationContext,"Theme Changed",Toast.LENGTH_SHORT).show()
+        })
+        alertDialog.setNegativeButton("Cancel", DialogInterface.OnClickListener { dialog, which ->
+
+            if(themeIndex!=index){
+                try {
+                    // Customise the styling of the base map using a JSON object defined
+                    // in a raw resource file.
+                    var success : Boolean = mMap.setMapStyle(
+                        MapStyleOptions.loadRawResourceStyle(
+                            this, theme[themeIndex]))
+
+                    if (!success) {
+                        Log.e("Map style", "Style parsing failed.");
+                    }
+                } catch (e:Exception) {
+                    Log.e("Exception in setting style", "Can't find style. Error: ", e);
+                }
+
+            }
+
+        })
+
+
+
+        alertDialog.show()
+
+    }
+
+/*
+    fun animateMarkerArr(locations : ArrayList<LatLng>,count:Int){
+
+        var countt = count
+        println("Startttt")
+        setPolyLines(locations)
+
+        if(locations.size>1&&count<locations.size-1) {
+            println("animateMarkerArr $count")
+            var marker = mMap.addMarker(MarkerOptions().position(locations[count]))
+            var animator = getAnimator(marker,locations[count+1])
+            animator.addListener(object :Animator.AnimatorListener{
+                override fun onAnimationRepeat(animation: Animator?) {
+
+                }
+
+                override fun onAnimationEnd(animation: Animator?) {
+                    marker.remove()
+                    countt++
+                    animateMarkerArr(locations,count)
+                }
+
+                override fun onAnimationCancel(animation: Animator?) {
+                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                }
+
+                override fun onAnimationStart(animation: Animator?) {
+                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                }
+            })
+            animator.start()
+        }
+    }
+*/
 
     internal class getImage (val imageView : ImageView,val progressBar: ProgressBar): AsyncTask<String,Void,String>(){
 
@@ -844,9 +1028,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onBackPressed() {
 
-        if(bottomsheetLayout.visibility == View.VISIBLE){
+        if(drawerLayout.isDrawerOpen(Gravity.LEFT)){
+          drawerLayout.closeDrawer(Gravity.LEFT)
+        } else if(bottomsheetLayout.visibility == View.VISIBLE){
             TransitionManager.beginDelayedTransition(bottomsheetLayout)
             bottomsheetLayout.visibility = View.GONE
+        }else if(searchLayout.visibility ==View.VISIBLE){
+            searchLayout.visibility = View.GONE
         }
         else {
             super.onBackPressed()

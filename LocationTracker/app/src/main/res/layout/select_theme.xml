@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="20dp"
+    android:paddingRight="20dp"
+    android:paddingLeft="20dp">
+
+    <RadioGroup
+        android:id="@+id/themeBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/standard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Standard"
+            android:textSize="20dp"
+            android:padding="10dp"/>
+
+        <RadioButton
+            android:id="@+id/dark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dark"
+            android:textSize="20dp"
+            android:padding="10dp"/>
+
+        <RadioButton
+            android:id="@+id/silver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Silver"
+            android:textSize="20dp"
+            android:padding="10dp"/>
+
+        <RadioButton
+            android:id="@+id/night"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Night"
+            android:textSize="20dp"
+            android:padding="10dp"/>
+
+        <RadioButton
+            android:id="@+id/retro"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Retro"
+            android:textSize="20dp"
+            android:padding="10dp"/>
+
+        <RadioButton
+            android:id="@+id/aubergine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Aubergine"
+            android:textSize="20dp"
+            android:padding="10dp"/>
+
+    </RadioGroup>
+    
+</LinearLayout>
