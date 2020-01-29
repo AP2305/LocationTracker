@@ -4,9 +4,7 @@ import android.Manifest
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.animation.TypeEvaluator
-import android.animation.ValueAnimator
 import android.app.AlertDialog
-import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.PackageManager
@@ -16,69 +14,40 @@ import android.graphics.Color
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import androidx.appcompat.app.AppCompatActivity
+import android.os.AsyncTask
+import android.os.Bundle
+import android.transition.TransitionManager
 import android.util.Log
+import android.util.Property
+import android.view.MenuItem
+import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.*
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-
+import androidx.core.view.GravityCompat
+import androidx.core.widget.NestedScrollView
+import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-import androidx.core.app.ComponentActivity.ExtraData
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.os.*
-import android.telecom.Call
-import android.transition.Transition
-import android.transition.TransitionManager
-import android.util.Property
-import android.view.*
-import android.view.animation.LinearInterpolator
-import android.view.inputmethod.InputMethod
-import android.view.inputmethod.InputMethodManager
-import android.widget.*
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.core.animation.addListener
-import androidx.core.net.toUri
-import androidx.core.os.postDelayed
-import androidx.core.widget.NestedScrollView
-import androidx.drawerlayout.widget.DrawerLayout
-import com.google.android.gms.dynamic.IObjectWrapper
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.*
-import com.google.android.gms.tasks.Task
-import com.google.android.libraries.places.api.Places
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import kotlinx.android.synthetic.main.activity_maps.*
-import kotlinx.android.synthetic.main.activity_maps.view.*
 import kotlinx.android.synthetic.main.marker_infos.*
-import kotlinx.android.synthetic.main.marker_infos.view.*
 import kotlinx.android.synthetic.main.nearby_markers_list.*
-import kotlinx.android.synthetic.main.select_theme.*
 import kotlinx.android.synthetic.main.select_theme.view.*
-import org.xml.sax.helpers.LocatorImpl
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.http.Url
 import java.io.InputStream
-import java.lang.StringBuilder
 import java.net.URL
-import java.time.format.DateTimeFormatter
-import java.util.*
-import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.math.ln
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
@@ -97,113 +66,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     var userlocation :Marker ?= null
     var pathListener : ValueEventListener?= null
     var polyLine : Polyline?=null
-    var typePlace = ""
     var nearbyPlaces = HashMap<String,LatLng>()
     var nearbyIndexs = ArrayList<LatLng>()
-    var locatoinLists = ArrayList<LatLng>()
     var locList = ArrayList<LatLng>()
     var theme = ArrayList<Int>()
     var themeIndex = 0
 
- /*   override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-
-        if (menu != null) {
-            this.menu = menu
-        }
-        val menuinflater = menuInflater
-        menuinflater.inflate(R.menu.mapmenu, menu)
-
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-
-        TransitionManager.beginDelayedTransition(constraintLayout)
-
-        if (item!!.itemId == R.id.search) {
-
-            if(userlocation != null){
-                searchbox.visibility = View.VISIBLE
-                searchbtn.visibility = View.VISIBLE
-                restaurantBtn.visibility = View.VISIBLE
-                searchbox.setText("")
-                searchbox.requestFocus()
-            }
-
-        }
-        if (item!!.itemId == R.id.drawPath) {
-
-            if(item.isCheckable){
-                if (item.isChecked){
-                    getLocList(false)
-                    item.isChecked = false
-                }else{
-                    getLocList(true)
-                    item.isChecked = true
-                }
-            }
-
-        }
-        if (item!!.itemId == R.id.nearby) {
-            if(userlocation!=null) {
-                var url = getUrl(userlocation!!.position.latitude, userlocation!!.position.longitude,"","",1000)
-                getNearbyPlaces(url)
-            }
-        }
-
-        if (item!!.itemId == R.id.trackStart) {
-
-            if(item.isCheckable) {
-                if(item.isChecked){
-                    noTracking()
-                    item.isChecked = false
-                }else {
-                    var trackUser = menu.findItem(R.id.trackUser)
-                    trackUser.isChecked = false
-                    trackingStart()
-                    item.isChecked = true
-                }
-            }
-        }
-
-        if(item!!.itemId == R.id.trackUser){
-            if(item.isCheckable) {
-                if(item.isChecked){
-                    trackUserStart(false)
-                    item.isChecked = false
-                }else {
-                    noTracking()
-                    var trackStart :MenuItem = menu.findItem(R.id.trackStart)
-                    trackStart.isChecked = false
-                    trackUserStart(true)
-                    item.isChecked = true
-                }
-            }
-        }
-
-//        if(item!!.itemId == R.id.playPath){
-//            println("starting play")
-//            getLocList(true)
-////            animateMarkerArr(locList!!,0)
-//        }
-
-        return super.onOptionsItemSelected(item)
-    }
-    */
 
     override fun onNavigationItemSelected(p0: MenuItem): Boolean {
 
-        var search = navView.menu.findItem(R.id.search)
-        var drawPath = navView.menu.findItem(R.id.drawPath)
-        var removePath = navView.menu.findItem(R.id.removePath)
-        var nearby = navView.menu.findItem(R.id.nearby)
-        var trackStart = navView.menu.findItem(R.id.trackStart)
-        var trackStop = navView.menu.findItem(R.id.trackStop)
-        var trackUser = navView.menu.findItem(R.id.trackUser)
-        var trackUserStop = navView.menu.findItem(R.id.trackUserStop)
-        var theme = navView.menu.findItem(R.id.theme)
+        val search = navView.menu.findItem(R.id.search)
+        val drawPath = navView.menu.findItem(R.id.drawPath)
+        val removePath = navView.menu.findItem(R.id.removePath)
+        val nearby = navView.menu.findItem(R.id.nearby)
+        val trackStart = navView.menu.findItem(R.id.trackStart)
+        val trackStop = navView.menu.findItem(R.id.trackStop)
+        val trackUser = navView.menu.findItem(R.id.trackUser)
+        val trackUserStop = navView.menu.findItem(R.id.trackUserStop)
+        val theme = navView.menu.findItem(R.id.theme)
 
-        drawerLayout.closeDrawer(Gravity.LEFT)
+        drawerLayout.closeDrawer(GravityCompat.START)
 
         when(p0){
             search->{
@@ -222,7 +104,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 drawPath.isVisible = true
             }
             nearby->{
-                var url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"point_of_interest","",5000)
+                val url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"point_of_interest","",5000)
                 getNearbyPlaces(url)
             }
             trackStart->{
@@ -277,14 +159,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         theme.add(R.raw.aubergine_style)
 
         val intent = intent
-        var flag = intent.getBooleanExtra("accuracy", true)
+        val flag = intent.getBooleanExtra("accuracy", true)
 
         if (!flag) {
             mintime = 90000
         }
 
 
-        var drawerToggle = ActionBarDrawerToggle(this,drawerLayout,R.string.app_name,R.string.app_name)
+        val drawerToggle = ActionBarDrawerToggle(this,drawerLayout,R.string.app_name,R.string.app_name)
         drawerLayout.addDrawerListener(object :DrawerLayout.DrawerListener{
             override fun onDrawerStateChanged(newState: Int) {
 
@@ -306,29 +188,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         drawerLayout.addDrawerListener(drawerToggle)
 
 
-        navbtn.setOnClickListener(object : View.OnClickListener{
-            override fun onClick(v: View?) {
-                if(!drawerLayout.isDrawerOpen(Gravity.LEFT)){
-                    navbtn.visibility = View.GONE
-                    drawerLayout.openDrawer(Gravity.LEFT)
-                }else{
-                    drawerLayout.closeDrawer(Gravity.LEFT)
-                }
+        navbtn.setOnClickListener {
+            if(!drawerLayout.isDrawerOpen(GravityCompat.START)){
+                navbtn.visibility = View.GONE
+                drawerLayout.openDrawer(GravityCompat.START)
+            }else{
+                drawerLayout.closeDrawer(GravityCompat.START)
             }
-        })
+        }
 
         searchbtn.setOnClickListener(View.OnClickListener {
 
             if (!searchBox.equals("")) {
 
-                var url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"",searchBox.text.toString(),5000)
+                val url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"",searchBox.text.toString(),5000)
                 getNearbyPlaces(url)
             } else {
-                var url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"","",5000)
+                val url = getUrl(userlocation!!.position.latitude,userlocation!!.position.longitude,"","",5000)
                 getNearbyPlaces(url)
             }
             try {
-                var keyboard = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                val keyboard = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 keyboard.hideSoftInputFromWindow(currentFocus.windowToken, 0)
             }catch (e:Exception){
                 e.printStackTrace()
@@ -354,7 +234,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         try {
             // Customise the styling of the base map using a JSON object defined
             // in a raw resource file.
-            var success : Boolean = mMap.setMapStyle(
+            val success : Boolean = mMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                             this, theme[themeIndex]))
 
@@ -375,14 +255,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 if(bottomListBehaviour.state == BottomSheetBehavior.STATE_EXPANDED) {
                     bottomListBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
                 }
-                var listt = ArrayList<LatLng>()
+                val listt = ArrayList<LatLng>()
                 listt.add(userlocation!!.position)
                 listt.add(marker.position)
                 mMap.clear()
                 setPolyLines(listt)
                 mMap.addMarker(MarkerOptions().position(marker.position).title(marker.title))
-                var markerr = mMap.addMarker(MarkerOptions().position(userlocation!!.position).title("StartLocation"))
-                var animator = getAnimator(markerr,marker.position)
+                val markerr = mMap.addMarker(MarkerOptions().position(userlocation!!.position).title("StartLocation"))
+                val animator = getAnimator(markerr,marker.position)
                 animator.start()
             }
         }
@@ -405,7 +285,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     }
 
-        fun checkLocPermission(): Boolean {
+        private fun checkLocPermission(): Boolean {
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.ACCESS_FINE_LOCATION
@@ -424,19 +304,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun getUserLocation():Location?{
         if(checkLocPermission()) {
-            locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, mintime, 1f, locationListener)
-            var lastLoc = locationManager!!.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, mintime, 1f, locationListener)
+            val lastLoc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
             return lastLoc
         }
         return null
     }
 
-    fun trackingStart() {
+    private fun trackingStart() {
         locationManager.removeUpdates(locationListener)
         locationListener = object :LocationListener{
             override fun onLocationChanged(location: Location?) {
                 mMap.clear()
-                var loc = LatLng(location!!.latitude, location!!.longitude)
+                val loc = LatLng(location!!.latitude, location.longitude)
                 var marker = mMap.addMarker(MarkerOptions().position(loc).title("Current Location"))
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 15f))
                 FirebaseDb.addLoc(loc)
@@ -453,14 +333,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         getUserLocation()
     }
 
-    fun noTracking(){
+    private fun noTracking(){
         if(locationListener!=null) {
             locationManager.removeUpdates(locationListener)
         }
         locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location?) {
                 mMap.clear()
-                var loc = LatLng(location!!.latitude, location!!.longitude)
+                val loc = LatLng(location!!.latitude, location.longitude)
                 var marker = mMap.addMarker(MarkerOptions().position(loc).title("Current Location"))
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 15f))
             }
@@ -475,16 +355,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         getUserLocation()
     }
 
-    fun initTrackUserListener(){
+    private fun initTrackUserListener(){
 
-        var image:Bitmap = BitmapFactory.decodeResource(resources,R.drawable.next)
+        val image:Bitmap = BitmapFactory.decodeResource(resources,R.drawable.next)
         trackUserListener = object : ValueEventListener {
             override fun onCancelled(p0: DatabaseError) {}
 
             override fun onDataChange(p0: DataSnapshot) {
                 println("trackUserListener Triggered")
-                var lat = p0.child("lat").getValue() as Double
-                var lng = p0.child("lng").getValue() as Double
+                val lat = p0.child("lat").getValue() as Double
+                val lng = p0.child("lng").getValue() as Double
 
                 if(userlocation!=null) {
                     userlocation!!.remove()
@@ -492,7 +372,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 println("new Location $lat $lng")
 
                 if (prevLocation == null) {
-                    var currentLoc = LatLng(
+                    val currentLoc = LatLng(
                         lat,
                         lng
                     )
@@ -502,9 +382,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 } else {
 
 
-                    var currentLoc = LatLng(lat, lng)
-                    var animator = getAnimator(prevLocation!!,currentLoc)
-                    var bearing : Float = bearingBetweenLocations(prevLocation!!.position, currentLoc)
+                    val currentLoc = LatLng(lat, lng)
+                    val animator = getAnimator(prevLocation!!,currentLoc)
+                    val bearing : Float = bearingBetweenLocations(prevLocation!!.position, currentLoc)
 
                     prevLocation!!.rotation = bearing
                     animator.addListener(object : Animator.AnimatorListener{
@@ -523,7 +403,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                         override fun onAnimationStart(animation: Animator?) {}
 
                     })
-                    animator!!.start()
+                    animator.start()
                 }
 
             }
@@ -531,7 +411,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    fun trackUserStart(flag:Boolean){
+    private fun trackUserStart(flag:Boolean){
 
         if (trackUserListener != null) {
         if(flag) {
@@ -563,8 +443,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             )
         }
         val property = Property.of(Marker::class.java, LatLng::class.java, "position")
-        var animator = ObjectAnimator.ofObject(marker, property, typeEvaluator, finalPosition)
-        animator!!.duration = 2000
+        val animator = ObjectAnimator.ofObject(marker, property, typeEvaluator, finalPosition)
+        animator.duration = 2000
 
         return animator
 
@@ -572,8 +452,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     fun setPolyLines(locationList:ArrayList<LatLng>) {
 
-        if (!locationList.isEmpty()) {
-            var polyLineOptions = PolylineOptions()
+        if (locationList.isNotEmpty()) {
+            val polyLineOptions = PolylineOptions()
             .addAll(locationList)
             .width(5f)
             .color(Color.BLUE);
@@ -581,18 +461,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    fun getLocList(flag:Boolean){
+    private fun getLocList(flag:Boolean){
 
         if(pathListener!=null) {
         if(flag){
 
-//                var listt = HashMap<String, LatLng>()
+
                 FirebaseDb.getReference().addValueEventListener(pathListener!!)
             }
             else{
                 FirebaseDb.getReference().removeEventListener(pathListener!!)
                 if(polyLine!=null){
-//                    polyLine!!.remove()
                     mMap.clear()
                     getUserLocation()
                 }
@@ -606,19 +485,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     fun initPathListener(){
         pathListener = object : ValueEventListener {
             override fun onCancelled(p0: DatabaseError) {
-                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
             }
 
             override fun onDataChange(p0: DataSnapshot) {
 
-                println("datasnap"+p0)
+                println("datasnap$p0")
                 locList.clear()
 
                 for(dataSnapshot in p0.children){
-                    var lat :Double= dataSnapshot.child("lat").getValue() as Double
-                    var lng :Double= dataSnapshot.child("lng").getValue() as Double
-                    var loc = LatLng(lat,lng)
-//                    listt.put(dataSnapshot.key.toString(),loc)
+                    val lat :Double= dataSnapshot.child("lat").getValue() as Double
+                    val lng :Double= dataSnapshot.child("lng").getValue() as Double
+                    val loc = LatLng(lat,lng)
                     locList.add(loc)
                     println("dataSnapshot"+dataSnapshot.key)
 
@@ -632,7 +509,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    fun getUrl(latitude:Double,longitude : Double, type:String,keyword:String,radius: Int):String{
+    private fun getUrl(latitude:Double, longitude : Double, type:String, keyword:String, radius: Int):String{
 
         val googlePlaceUri = StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json")
 
@@ -640,19 +517,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         googlePlaceUri.append("&radius=$radius")
         googlePlaceUri.append("&type=$type")
         googlePlaceUri.append("&keyword=$keyword")
-        googlePlaceUri.append("&key=AIzaSyCuv--P39ZI5IQVYzgVyq6uaG4iyNmMxtA")
-
+        googlePlaceUri.append("&key="+getString(R.string.google_maps_key))
         Log.e("url",""+googlePlaceUri)
 
         return ""+ googlePlaceUri
     }
 
-    fun getImageUrl(referencee:String):String{
+    private fun getImageUrl(referencee:String):String{
 
         val googlePhotoUri = StringBuilder("https://maps.googleapis.com/maps/api/place/photo?")
         googlePhotoUri.append("&maxwidth=500")
-        googlePhotoUri.append("&photoreference="+referencee)
-        googlePhotoUri.append("&key=AIzaSyCuv--P39ZI5IQVYzgVyq6uaG4iyNmMxtA")
+        googlePhotoUri.append("&photoreference=$referencee")
+        googlePhotoUri.append("&key="+getString(R.string.google_maps_key))
 
         Log.e("url",""+googlePhotoUri)
 
@@ -661,7 +537,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if(requestCode == 1){
-            if(grantResults.size>0){
+            if(grantResults.isNotEmpty()){
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
                     noTracking()
                 }
@@ -671,7 +547,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
-    fun getNearbyPlaces(url:String){
+    private fun getNearbyPlaces(url:String){
 
         mService.getNearbyPlaces(url)
             .enqueue(object : Callback<ResultData> {
@@ -684,14 +560,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                     call: retrofit2.Call<ResultData>,
                     response: Response<ResultData>
                 ) {
-                    if (response!!.isSuccessful) {
+                    if (response.isSuccessful) {
                         mMap.clear()
                         var listVieww = ArrayList<String>()
                         nearbyIndexs.clear()
                         nearbyPlaces.clear()
                         currentPlace = response.body()!!
                         if (response.body()!!.results!!.size > 1) {
-                            for (i in 0 until response!!.body()!!.results!!.size) {
+                            for (i in 0 until response.body()!!.results!!.size) {
                                 val googlePlace = response.body()!!.results!![i]
                                 val lat = googlePlace.geometry!!.location!!.lat
                                 val lng = googlePlace.geometry!!.location!!.lng
@@ -701,9 +577,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
                                 nearbyPlaces.put(placeName, LatLng(lat!!, lng!!))
 //                                var markerr = MarkerOptions().position(LatLng(lat!!, lng!!)).title(placeName)
-                                nearbyIndexs.add(LatLng(lat!!, lng!!))
+                                nearbyIndexs.add(LatLng(lat, lng))
                                 listVieww.add(placeName)
-                                var marker = mMap.addMarker(MarkerOptions().position(LatLng(lat!!,lng!!)).title(placeName).visible(true))
+                                mMap.addMarker(MarkerOptions().position(LatLng(lat, lng)).title(placeName).visible(true))
                             }
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userlocation!!.position,20f))
                             openBottomList(listVieww)
@@ -718,13 +594,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     }
 
-    fun openMarker(marker:Marker){
-        if(marker.title.equals("Current Location")){}
-        else {
+    private fun openMarker(marker:Marker){
+        if(!marker.title.equals("Current Location")){
 
             bottomSheetBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
             marker_infos_name.text = marker.title
-            var index = nearbyIndexs.indexOf(marker.position)
+            val index = nearbyIndexs.indexOf(marker.position)
             marker_infos_address.text = currentPlace.results!![index].vicinity
             marker_infos_rating.text = currentPlace.results!![index].rating.toString()
             var tagss = ""
@@ -735,7 +610,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             marker_infos_tags.text = tagss
             marker_infos_progressBar.visibility = View.VISIBLE
             if(currentPlace.results!![index].photos!=null) {
-                var url:String ?= getImageUrl(currentPlace.results!![index].photos!![0].photo_reference!!)
+                val url:String ?= getImageUrl(currentPlace.results!![index].photos!![0].photo_reference!!)
                 marker_infos_image.setImageDrawable(null)
                 getImage(marker_infos_image,marker_infos_progressBar).execute(url)
             }else{
@@ -763,7 +638,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         marker_infos_tags.text = tagss
         marker_infos_progressBar.visibility = View.VISIBLE
         if(currentPlace.results!![index].photos!=null) {
-            var url:String ?= getImageUrl(currentPlace.results!![index].photos!![0].photo_reference!!)
+            val url:String ?= getImageUrl(currentPlace.results!![index].photos!![0].photo_reference!!)
             marker_infos_image.setImageDrawable(null)
             getImage(marker_infos_image,marker_infos_progressBar).execute(url)
         }else{
@@ -788,16 +663,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     fun openBottomList(listVieww:ArrayList<String>){
 
-        /*      // Simple adapter
-              var adapter = ArrayAdapter(
-                  applicationContext,
-                  R.layout.support_simple_spinner_dropdown_item,
-                  listVieww
-              )
-      */
-
         //Custom adapter
-        var adapter = bsListAdapter(this,listVieww)
+        val adapter = bsListAdapter(this,listVieww)
 
         bottomListBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
         marker_listView.adapter = adapter
@@ -806,8 +673,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         nearby_marker_lists.visibility = View.VISIBLE
         marker_infos.visibility = View.GONE
         marker_listView.setOnItemClickListener(AdapterView.OnItemClickListener { parent, view, position, id ->
-            var mname = listVieww[position]
-            var loc = nearbyPlaces.get(mname)
+            val mname = listVieww[position]
+            nearbyPlaces[mname]
 
             openMarker(position)
         })
@@ -831,16 +698,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun bearingBetweenLocations(latLng1:LatLng, latLng2:LatLng):Float {
 
-    var PI:Double = 3.14159;
-    var lat1:Double = latLng1.latitude * PI / 180;
-    var long1:Double = latLng1.longitude * PI / 180;
-    var lat2:Double = latLng2.latitude * PI / 180;
-    var long2:Double = latLng2.longitude * PI / 180;
+    val PI = 3.14159;
+    val lat1:Double = latLng1.latitude * PI / 180;
+    val long1:Double = latLng1.longitude * PI / 180;
+    val lat2:Double = latLng2.latitude * PI / 180;
+    val long2:Double = latLng2.longitude * PI / 180;
 
-    var dLon:Double = (long2 - long1);
+    val dLon:Double = (long2 - long1);
 
-    var y:Double = Math.sin(dLon) * Math.cos(lat2);
-    var x:Double = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+    val y:Double = Math.sin(dLon) * Math.cos(lat2);
+    val x:Double = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
 
     var brng:Double = Math.atan2(y, x);
 
@@ -864,34 +731,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         bottomSheetBehaviour.isHideable = true
         bottomListBehaviour.isHideable = true
 
-        var listener = object : BottomSheetBehavior.BottomSheetCallback(){
+         val listener = object : BottomSheetBehavior.BottomSheetCallback(){
             override fun onSlide(p0: View, p1: Float) {
-                if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_EXPANDED){
-                    bottomSheetBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
-                }else if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_COLLAPSED){
-                    bottomSheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
-                }else if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_HIDDEN){
-                    bottomSheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED
+                when {
+                    bottomSheetBehaviour.state == BottomSheetBehavior.STATE_EXPANDED -> bottomSheetBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
+                    bottomSheetBehaviour.state == BottomSheetBehavior.STATE_COLLAPSED -> bottomSheetBehaviour.state = BottomSheetBehavior.STATE_HIDDEN
+                    bottomSheetBehaviour.state == BottomSheetBehavior.STATE_HIDDEN -> bottomSheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED
                 }
             }
 
             override fun onStateChanged(p0: View, p1: Int) {
             }
         }
-
-
         bottomSheetBehaviour.setBottomSheetCallback(listener)
-//        bottomListBehaviour.setBottomSheetCallback(listListener)
-
         bottomSheetBehaviour.isHideable = true
 
     }
 
-    fun chooseTheme(){
+    private fun chooseTheme(){
 
         var index = themeIndex
 
-        var themeView = View.inflate(this,R.layout.select_theme,null)
+        val themeView = View.inflate(this,R.layout.select_theme,null)
         themeView.themeBox.check(when(themeIndex){
             0->R.id.standard
             1->R.id.dark
@@ -901,7 +762,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             5->R.id.aubergine
             else -> R.id.standard
         })
-        themeView.themeBox.setOnCheckedChangeListener(RadioGroup.OnCheckedChangeListener { group, checkedId ->
+        themeView.themeBox.setOnCheckedChangeListener { _, checkedId ->
 
             when(checkedId){
                 R.id.standard-> index = 0
@@ -913,7 +774,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             }
 
             try {
-                var success : Boolean = mMap.setMapStyle(
+                val success : Boolean = mMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                         this, theme[index]))
                 if (!success) {
@@ -922,9 +783,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             } catch (e:Exception) {
                 Log.e("Exception in setting style", "Can't find style. Error: ", e);
             }
-        })
+        }
 
-        var alertDialog = AlertDialog.Builder(this)
+        val alertDialog = AlertDialog.Builder(this)
         alertDialog.setTitle("Select Theme")
         alertDialog.setView(themeView)
         alertDialog.setPositiveButton("APPLY", DialogInterface.OnClickListener { dialog, which ->
@@ -939,7 +800,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 try {
                     // Customise the styling of the base map using a JSON object defined
                     // in a raw resource file.
-                    var success : Boolean = mMap.setMapStyle(
+                    val success : Boolean = mMap.setMapStyle(
                         MapStyleOptions.loadRawResourceStyle(
                             this, theme[themeIndex]))
 
@@ -960,53 +821,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     }
 
-/*
-    fun animateMarkerArr(locations : ArrayList<LatLng>,count:Int){
-
-        var countt = count
-        println("Startttt")
-        setPolyLines(locations)
-
-        if(locations.size>1&&count<locations.size-1) {
-            println("animateMarkerArr $count")
-            var marker = mMap.addMarker(MarkerOptions().position(locations[count]))
-            var animator = getAnimator(marker,locations[count+1])
-            animator.addListener(object :Animator.AnimatorListener{
-                override fun onAnimationRepeat(animation: Animator?) {
-
-                }
-
-                override fun onAnimationEnd(animation: Animator?) {
-                    marker.remove()
-                    countt++
-                    animateMarkerArr(locations,count)
-                }
-
-                override fun onAnimationCancel(animation: Animator?) {
-                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                }
-
-                override fun onAnimationStart(animation: Animator?) {
-                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                }
-            })
-            animator.start()
-        }
-    }
-*/
 
     internal class getImage (val imageView : ImageView,val progressBar: ProgressBar): AsyncTask<String,Void,String>(){
 
         var imagee : Bitmap?= null
 
         override fun doInBackground(vararg params: String?): String? {
-            var urlstr = params[0]
+            val urlstr = params[0]
 
-            var url:URL = URL(urlstr)
+            val url = URL(urlstr)
 
             try{
 
-                var inputt: InputStream = url.openConnection().getInputStream()
+                val inputt: InputStream = url.openConnection().getInputStream()
                 imagee = BitmapFactory.decodeStream(inputt)
 
 
@@ -1028,8 +855,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     override fun onBackPressed() {
 
-        if(drawerLayout.isDrawerOpen(Gravity.LEFT)){
-          drawerLayout.closeDrawer(Gravity.LEFT)
+        if(drawerLayout.isDrawerOpen(GravityCompat.START)){
+          drawerLayout.closeDrawer(GravityCompat.START)
         } else if(bottomsheetLayout.visibility == View.VISIBLE){
             TransitionManager.beginDelayedTransition(bottomsheetLayout)
             bottomsheetLayout.visibility = View.GONE

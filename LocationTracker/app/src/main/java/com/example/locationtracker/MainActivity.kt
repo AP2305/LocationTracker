@@ -15,13 +15,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        button.setOnClickListener(View.OnClickListener { v: View? ->
+        button.setOnClickListener {
 
             var acc = accuracy.showText
             var mapActivity = Intent(this,MapsActivity::class.java)
             intent.putExtra("accuracy",acc)
             startActivity(mapActivity)
-        })
+        }
 
     }
 }

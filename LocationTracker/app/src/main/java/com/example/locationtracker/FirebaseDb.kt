@@ -20,14 +20,11 @@ class FirebaseDb {
 
     companion object FirebaseDb {
 
-        private lateinit var database: FirebaseDatabase
-        private lateinit var myRef: DatabaseReference
-        private lateinit var myRefPath: DatabaseReference
-//        private lateinit var auth: FirebaseAuth
-        var user: FirebaseUser?=null
+        private var database: FirebaseDatabase = FirebaseDatabase.getInstance()
+        private var myRef: DatabaseReference
+        private var myRefPath: DatabaseReference
 
         init {
-            database = FirebaseDatabase.getInstance()
             myRef = database.getReference("/user/Location")
             myRefPath = database.getReference("/user/Path")
 //            auth = FirebaseAuth.getInstance()
@@ -59,7 +56,7 @@ class FirebaseDb {
             return myRefPath
         }
 
-        fun getCurrentTime(): String {
+        private fun getCurrentTime(): String {
 
             val date = Calendar.getInstance().time
             val strdate = date.toString("yyyy-MM-dd HH:mm:ss")
