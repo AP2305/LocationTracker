@@ -7,6 +7,7 @@ import android.animation.TypeEvaluator
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -44,10 +45,17 @@ import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.android.synthetic.main.marker_infos.*
 import kotlinx.android.synthetic.main.nearby_markers_list.*
 import kotlinx.android.synthetic.main.select_theme.view.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.InputStream
 import java.net.URL
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
@@ -71,6 +79,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     var locList = ArrayList<LatLng>()
     var theme = ArrayList<Int>()
     var themeIndex = 0
+    private var job : Job?= null
 
 
     override fun onNavigationItemSelected(p0: MenuItem): Boolean {
@@ -84,6 +93,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         val trackUser = navView.menu.findItem(R.id.trackUser)
         val trackUserStop = navView.menu.findItem(R.id.trackUserStop)
         val theme = navView.menu.findItem(R.id.theme)
+        val playPath = navView.menu.findItem(R.id.playPath)
 
         drawerLayout.closeDrawer(GravityCompat.START)
 
@@ -134,6 +144,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             }
             theme->{
                 chooseTheme()
+            }
+            playPath->{
+                getLocListPath(true)
+                animateMarkerArr(locList)
             }
         }
 
@@ -279,10 +293,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        if (checkLocPermission()) {
+        if(!locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)||!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+            Toast.makeText(applicationContext,"Enable Location to Continue",Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this,MainActivity::class.java))
+            finish()
+        } else if (checkLocPermission()) {
             noTracking()
         }
-
     }
 
         private fun checkLocPermission(): Boolean {
@@ -357,7 +374,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun initTrackUserListener(){
 
-        val image:Bitmap = BitmapFactory.decodeResource(resources,R.drawable.next)
+        val image:Bitmap = BitmapFactory.decodeResource(resources,R.drawable.car)
         trackUserListener = object : ValueEventListener {
             override fun onCancelled(p0: DatabaseError) {}
 
@@ -444,7 +461,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         }
         val property = Property.of(Marker::class.java, LatLng::class.java, "position")
         val animator = ObjectAnimator.ofObject(marker, property, typeEvaluator, finalPosition)
-        animator.duration = 2000
+        animator.duration = 1500
 
         return animator
 
@@ -456,8 +473,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             val polyLineOptions = PolylineOptions()
             .addAll(locationList)
             .width(5f)
-            .color(Color.BLUE);
-            polyLine = mMap.addPolyline(polyLineOptions);
+            .color(Color.BLUE)
+            polyLine = mMap.addPolyline(polyLineOptions)
         }
     }
 
@@ -465,8 +482,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         if(pathListener!=null) {
         if(flag){
-
-
                 FirebaseDb.getReference().addValueEventListener(pathListener!!)
             }
             else{
@@ -481,6 +496,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             getLocList(flag)
         }
 }
+//getting list of preset Location Path
+    private fun getLocListPath(flag:Boolean){
+
+        if(pathListener!=null) {
+            if(flag){
+                FirebaseDb.getReferencePath().addValueEventListener(pathListener!!)
+            }
+            else{
+                FirebaseDb.getReference().removeEventListener(pathListener!!)
+                if(polyLine!=null){
+                    mMap.clear()
+                    getUserLocation()
+                }
+            }
+        }else{
+            initPathListener()
+            getLocList(flag)
+        }
+    }
 
     fun initPathListener(){
         pathListener = object : ValueEventListener {
@@ -698,23 +732,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun bearingBetweenLocations(latLng1:LatLng, latLng2:LatLng):Float {
 
-    val PI = 3.14159;
-    val lat1:Double = latLng1.latitude * PI / 180;
-    val long1:Double = latLng1.longitude * PI / 180;
-    val lat2:Double = latLng2.latitude * PI / 180;
-    val long2:Double = latLng2.longitude * PI / 180;
+    val PI = 3.14159
+    val lat1:Double = latLng1.latitude * PI / 180
+    val long1:Double = latLng1.longitude * PI / 180
+    val lat2:Double = latLng2.latitude * PI / 180
+    val long2:Double = latLng2.longitude * PI / 180
 
     val dLon:Double = (long2 - long1);
 
-    val y:Double = Math.sin(dLon) * Math.cos(lat2);
-    val x:Double = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+    val y:Double = sin(dLon) * cos(lat2);
+    val x:Double = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
 
-    var brng:Double = Math.atan2(y, x);
+    var brng:Double = atan2(y, x)
 
-    brng = Math.toDegrees(brng);
-    brng = (brng + 360) % 360;
+    brng = Math.toDegrees(brng)
+    brng = (brng + 360) % 360
 
-    return brng.toFloat();
+        //changed to work with my png
+        brng -= 90
+
+    return brng.toFloat()
 
 }
 
@@ -850,6 +887,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             progressBar.visibility = View.GONE
 
         }
+
+    }
+
+    private fun animateMarkerArr(locList : ArrayList<LatLng>){
+        mMap.clear()
+        job?.cancel()
+        locationManager.removeUpdates(locationListener)
+        val image: Bitmap = BitmapFactory.decodeResource(resources,R.drawable.car)
+        setPolyLines(locList)
+        job = MainScope().launch {
+            repeat(locList.size - 2) { i ->
+                val marker = mMap.addMarker(MarkerOptions().position(locList[i]).icon(BitmapDescriptorFactory.fromBitmap(image)).anchor(0.5f,0.5f))
+                val rotation = bearingBetweenLocations(marker.position,locList[i+1])
+                marker.rotation = rotation
+                getAnimator(marker, locList[i + 1]).start()
+                delay(1400)
+                marker.remove()
+            }
+        }
+        job?.invokeOnCompletion { getUserLocation() }
 
     }
 

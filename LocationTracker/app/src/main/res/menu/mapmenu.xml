@@ -28,9 +28,9 @@
         android:id="@+id/trackUserStop"
         android:title="Stop Tracking User"
         android:visible="false"/>
-<!--<item
+    <item
         android:id="@+id/playPath"
-        android:title="Play Path"/>-->
+        android:title="Play Path"/>
 
     <item
         android:id="@+id/theme"

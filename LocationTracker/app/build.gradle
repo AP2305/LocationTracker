@@ -36,12 +36,22 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
+    //Google Maps and Places api
     implementation 'com.google.android.gms:play-services-maps:16.1.0'
     implementation 'com.google.android.libraries.places:places:2.0.0'
 
+    //Retrofit
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
 
+    //Material Design
     implementation 'com.google.android.material:material:1.0.0-alpha3'
+
+
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
+    //annotationProcessor 'androidx.lifecycle:lifecycle-compiler:2.1.0'
+
+    //Coroutines
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2"
 
 }
